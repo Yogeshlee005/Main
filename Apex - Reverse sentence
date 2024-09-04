@@ -1,0 +1,9 @@
+String s = 'I am a fool';
+system.debug('s--->'+s);
+system.debug('s.reverse--->'+s.reverse());
+List<string> ls=  s.split(' ');
+List<String> rs = new List<String>();
+for(Integer i = (ls.size()-1); i>= 0 ; i--){
+    rs.add(ls[i]);
+}
+system.debug('rs--->'+String.join(rs,' '));
