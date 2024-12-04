@@ -1,0 +1,10 @@
+system.debug('r-->'+r);
+
+String s = 'Yogesh';
+String r = '';
+System.debug('s.length -->' + s.length());
+for (Integer i = s.length() - 1; i >= 0; i--) {
+    System.debug('charAt(i) -->' + s.substring(i, i + 1)); // Extract the character as a substring
+    r += s.substring(i, i + 1); // Add the character to the reversed string
+}
+System.debug('r -->' + r);
