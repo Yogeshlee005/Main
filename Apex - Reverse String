@@ -1,4 +1,8 @@
-system.debug('r-->'+r);
+Method 1
+String s = 'Yogesh';
+system.debug('s.reverse--->'+s.reverse());
+
+-----------------------------------------------------------------------
 
 String s = 'Yogesh';
 String r = '';
