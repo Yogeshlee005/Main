@@ -1,0 +1,3 @@
+  Formula
+      =IMAGE(CONCAT("https://logo.clearbit.com/",B3,".com"))
+B3 --> cell number
