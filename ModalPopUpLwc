@@ -1,0 +1,33 @@
+Html
+---------------------------------------------------------
+<template>
+
+  <lightning-modal-header label={header}></lightning-modal-header>
+        
+        <lightning-modal-body>
+            <div class="slds-p-around_medium">
+                <p>Helo mr lee</p>
+            </div>
+        </lightning-modal-body>
+
+        <lightning-modal-footer>
+            <lightning-button label="Close" variant="neutral" onclick={handleClose}></lightning-button>
+             <lightning-button label="Save" variant="brand" onclick={closeModal}></lightning-button> 
+        </lightning-modal-footer>
+    
+</template>
+----------------------------------------------------------
+Js
+------------------------
+import { LightningElement ,track} from 'lwc';
+import LightningModal from 'lightning/modal';
+import {CloseActionScreenEvent} from 'lightning/actions';
+
+export default class MyModal extends LightningModal {
+    
+    @track header = 'Modal Header';
+    handleClose() {
+        this.dispatchEvent(new CloseActionScreenEvent());
+    }
+    name = 'World'; 
+}
