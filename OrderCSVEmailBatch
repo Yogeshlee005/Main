@@ -1,0 +1,83 @@
+apex class 
+describtion - this call will create csv file  for  order that create in last 2 hours
+
+global class OrderCSVEmailBatch implements Database.Batchable<SObject>, Database.Stateful {
+
+    List<String> csvRows = new List<String>();
+
+    global Database.QueryLocator start(Database.BatchableContext BC) {
+        Datetime cutoff = System.now().addHours(-2);
+        return Database.getQueryLocator([
+            SELECT Id, OrderNumber, EffectiveDate, Type, Status, TotalAmount, 
+                   Revision_Level__c, Order_Release_Due_Date__c,
+                   Account.Customer_Code__c,
+                   Opportunity.Primary_Contact__r.Name,
+                   (SELECT Quantity, Product2.ProductCode, Product2.Stone_SKU__c
+                    FROM OrderItems)
+            FROM Order
+            WHERE CreatedDate >= :cutoff AND Opportunity_Type__c = 'Ecommerce'
+        ]);
+    }
+
+    global void execute(Database.BatchableContext BC, List<SObject> scope) {
+        for (Order o : (List<Order>)scope) {
+            String customerCode = o.Account != null ? o.Account.Customer_Code__c : '';
+            String billingAddressName = o.Opportunity != null && o.Opportunity.Primary_Contact__r != null 
+                                        ? o.Opportunity.Primary_Contact__r.Name : '';
+
+            for (OrderItem item : o.OrderItems) {
+                String itemNumber = item.Product2 != null ? item.Product2.Stone_SKU__c : '';
+                String partNumber = item.Product2 != null ? item.Product2.ProductCode : '';
+                
+                csvRows.add(String.join(new List<String>{
+                    escapeCsv(customerCode),
+                    escapeCsv(o.OrderNumber),
+                    escapeCsv(String.valueOf(o.EffectiveDate)),
+                    escapeCsv(o.Type),
+                    escapeCsv(billingAddressName),
+                    escapeCsv(itemNumber),
+                    escapeCsv(partNumber),
+                    escapeCsv(o.Revision_Level__c),
+                    escapeCsv(String.valueOf(item.Quantity)),
+                    escapeCsv(String.valueOf(o.Order_Release_Due_Date__c))
+                }, ','));
+            }
+        }
+    }
+
+    global void finish(Database.BatchableContext BC) {
+        if (!csvRows.isEmpty()) {
+            List<String> recipients = Label.Recipient_ID.split(',');
+            List<String> header = new List<String>{
+                'Customer_Code,Order_Number,Order_Date,Order_Type,Billing_Address_Name,Item_Number,Part_Number,Revision_Level,Order_Release_Quantity,Order_Release_Due_Date'
+            };
+            header.addAll(csvRows);
+            csvRows = header;
+
+            Messaging.EmailFileAttachment attachment = new Messaging.EmailFileAttachment();
+            attachment.setFileName('Order_Report_' + Date.today().format() + '.csv');
+            attachment.setBody(Blob.valueOf(String.join(csvRows, '\n')));
+            attachment.setContentType('text/csv');
+
+            Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+            mail.setToAddresses(recipients);
+            mail.setSubject('Order Inserted Report - ' + DateTime.now().format());
+            mail.setPlainTextBody('Please find attached the order records inserted in the last 2 hours.');
+            mail.setFileAttachments(new Messaging.EmailFileAttachment[] { attachment });
+
+            try {
+                Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+            } catch (Exception e) {
+                System.debug('Email failed: ' + e.getMessage());
+            }
+        }
+    }
+
+    private String escapeCsv(String input) {
+        if (String.isBlank(input)) return '';
+        if (input.contains(',') || input.contains('"') || input.contains('\n')) {
+            input = '"' + input.replaceAll('"', '""') + '"';
+        }
+        return input;
+    }
+}
